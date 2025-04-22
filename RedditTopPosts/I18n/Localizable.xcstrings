@@ -4,9 +4,6 @@
     "%@" : {
 
     },
-    "Add Item" : {
-
-    },
     "apple" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -40,9 +37,6 @@
         }
       }
     },
-    "Item at %@" : {
-
-    },
     "launchDescription" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -74,9 +68,6 @@
           }
         }
       }
-    },
-    "Select an item" : {
-
     },
     "Something went wrong!" : {
 
