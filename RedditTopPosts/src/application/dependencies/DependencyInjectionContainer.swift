@@ -22,7 +22,6 @@ struct DependencyInjectionContainer: DIContainer {
     }()
     
     static let allSchemas = Schema([
-        Item.self,
         PostsModel.self,
         PostItemsModel.self,
         ChildrenModel.self,
