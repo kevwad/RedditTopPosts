@@ -1,19 +1,17 @@
 //
-//  RedditTopPostsApp.swift
+//  DependencyInjectionContainer.swift
 //  RedditTopPosts
 //
 //  Created by Kevin Wadera on 2025-04-21.
 //
 
-import SwiftUI
 import SwiftData
 
-@main
-struct RedditTopPostsApp: App {
+struct DependencyInjectionContainer: DIContainer {
+    var apiClient: any APIClientAPI = NetworkClient.shared
+    
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
+        let schema = DependencyInjectionContainer.allSchemas
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
@@ -22,11 +20,13 @@ struct RedditTopPostsApp: App {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-        .modelContainer(sharedModelContainer)
-    }
+    
+    static let allSchemas = Schema([
+        Item.self,
+        PostsModel.self,
+        PostItemsModel.self,
+        ChildrenModel.self,
+        PostDataModel.self,
+        CategoriesModel.self,
+    ])
 }
