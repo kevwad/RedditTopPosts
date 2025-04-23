@@ -20,20 +20,22 @@ struct PostsView: View {
                 List(items) { item in
                     PostRow(post: item)
                 }
+                .refreshable {
+                    await viewModel.refresh()
+                }
                 
             case let .loading(_, message):
                 ProgressView {
                     Text(message ?? "Loading...")
                 }
                 
-            case .failed(let error):
-                Text("\(error.localizedDescription)")
+            case .failed(_):
+                ContentUnavailableView.search(text: "No data Available right now")
                 
             default:
                 Text("Something went wrong!")
             }            
         }
-        
     }
 }
 

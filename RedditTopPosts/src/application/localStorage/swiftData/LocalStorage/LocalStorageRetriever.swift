@@ -10,11 +10,13 @@ import Foundation
 
 enum LocalStorageRetrieverError: Error {
     case noObjectFound
+    case modelContextUnavailable
 }
 
 protocol LocalStorageAPI {
-    var modelContext: ModelContext { get }
-
+    var modelContext: ModelContext? { get }
+    var modelContainer: ModelContainer? { get }
+    
     func getLocallyStoredObject<T: PersistentModel>(
         _ type: T.Type,
         predicate: Predicate<T>?,
@@ -28,7 +30,9 @@ extension LocalStorageAPI {
         predicate: Predicate<T>? = nil,
         sortBy: [SortDescriptor<T>] = []) throws -> [T] {
             let fetchDescriptor = FetchDescriptor<T>()
-            let fetchedItems = try modelContext.fetch(fetchDescriptor)
+            guard let fetchedItems = try modelContext?.fetch(fetchDescriptor) else {
+                throw LocalStorageRetrieverError.modelContextUnavailable
+            }
             return fetchedItems
         }
 }

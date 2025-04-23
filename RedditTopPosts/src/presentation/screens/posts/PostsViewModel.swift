@@ -9,22 +9,19 @@ import Observation
 import SwiftData
 
 @Observable
-@MainActor class PostsViewModel {
+class PostsViewModel {
 
     var postItems: Resource<[PostItems]> = Resource.idle
     let diContainer: DIContainer
     let postItemsRepo: PostItemsRepository
     let category: String
-    var modelContext: ModelContext
     
     
     init(container: DIContainer, category: String) {
         diContainer = container
-        modelContext = container.sharedModelContainer.mainContext
         self.category = category
         postItemsRepo = .init(
             apiClient: container.apiClient,
-            modelContext: container.sharedModelContainer.mainContext,
             category: category)
     }
     
@@ -38,6 +35,18 @@ import SwiftData
                 print(error.localizedDescription)
                 self.postItems = .failed(error: error)
             }
+        }
+    }
+    
+    func refresh() async {
+        do {
+            let remotePosts = try await postItemsRepo.requestRemotePosts()
+            if !remotePosts.isEmpty {
+                print("[PostsVM]: On refresh, received \(remotePosts.count) new posts.")
+                self.postItems = .loaded(items: remotePosts)
+            }
+        } catch {
+            // do nothing
         }
     }
 }

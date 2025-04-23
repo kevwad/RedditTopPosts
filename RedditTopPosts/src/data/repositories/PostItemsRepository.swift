@@ -11,46 +11,79 @@ import SwiftData
 class PostItemsRepository: LocalStorageAPI {
     let apiClient: APIClientAPI
     let category: String
-    let modelContext: ModelContext
+    var modelContext: ModelContext? = nil
+    var modelContainer: ModelContainer? = nil
 
-    init(apiClient: APIClientAPI, modelContext: ModelContext, category: String) {
+    init(apiClient: APIClientAPI, category: String) {
         self.apiClient = apiClient
         self.category = category
-        self.modelContext = modelContext
+        
+        Task {
+            do {
+                let configuration = ModelConfiguration(isStoredInMemoryOnly: false)
+                let container = try ModelContainer(
+                    for: CategoriesModel.self,
+                    configurations: configuration
+                )
+                self.modelContainer = container
+                self.modelContext = ModelContext(container)
+                self.modelContext?.autosaveEnabled = true
+            } catch(let error) {
+                print(error)
+                print(error.localizedDescription)
+            }
+        }
     }
     
     func getPosts() async throws -> [PostItems] {
-        /// 1. check local storage availability
-        let allStoredPosts = await storedPosts()
-        if let storedPosts = allStoredPosts, !storedPosts.isEmpty {
+        do {
+            /// 1. check local storage availability
+            let storedPosts = try await requestLocallyStoredPosts()
             print("successfully fetched \(storedPosts.count) stored posts for \(self.category)")
             return storedPosts
-        }
+        } catch LocalStorageRetrieverError.noObjectFound {
+            
+            /// 2. request remote storage access
+            let postItems = try await requestRemotePosts()
 
-        /// 2. request remote storage access
+            /// ensure that the received category is a valid
+            assert(Categories(rawValue: self.category) != nil)
+            
+            /// 3. dump to db
+            persistPostItems(postItems)
+
+            return postItems
+        } catch {
+            print(error.localizedDescription)
+            throw error
+        } 
+    }
+
+    func requestLocallyStoredPosts() async throws -> [PostItems] {
+        let allStoredPosts = await storedPosts()
+        guard let storedPosts = allStoredPosts, !storedPosts.isEmpty else {
+            throw LocalStorageRetrieverError.noObjectFound
+        }
+        return storedPosts
+    }
+    
+    func requestRemotePosts() async throws -> [PostItems] {
         let endpoint = TopPostsEndpoint(path: Constants.URLs.topPostsURL(for: category))
         guard let urlRequest = endpoint.urlRequest() else { throw URLError(.badURL) }
         guard let posts: Posts = try await apiClient.get(request: urlRequest) else { throw APIError.noData }
-        
-        let postItems = posts.data.children.compactMap(\.data)
-        /// ensure that the received category is a valid
-        assert(Categories(rawValue: self.category) != nil)
-        
-        /// 3. dump to db
+        return posts.data.children.compactMap(\.data)
+    }
+
+    func persistPostItems(_ postItems: [PostItems]) {
         let categoryModel = CategoriesModel(
             category: self.category,
             postItems: postItems
         )
         
-        try await MainActor.run {
-            modelContext.insert(categoryModel)
-            try modelContext.save()
-        }
-        
-        return postItems
+        modelContext?.insert(categoryModel)
+        try? modelContext?.save()
     }
-    
-    @MainActor
+
     func storedPosts() async -> [PostItems]? {
         return try? getLocallyStoredObject( CategoriesModel.self )
             .filter {

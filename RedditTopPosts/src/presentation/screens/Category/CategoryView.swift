@@ -19,6 +19,7 @@ struct CategoryView: View {
                     PostsView(
                         viewModel: postVM
                     )
+                    .navigationTitle(String(localized: "\(category.1)").capitalized)
                     .task {
                         postVM.fetchPostItems()
                     }

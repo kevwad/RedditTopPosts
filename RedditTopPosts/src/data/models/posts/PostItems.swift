@@ -8,7 +8,7 @@
 import Foundation
 
 struct PostItems: Codable, Identifiable, Hashable {
-    let id = UUID().uuidString
+    var id = UUID().uuidString
     let author: String
     let thumbnail: String
     let title: String
