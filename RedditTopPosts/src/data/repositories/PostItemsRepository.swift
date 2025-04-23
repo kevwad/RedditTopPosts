@@ -31,7 +31,23 @@ class PostItemsRepository: LocalStorageAPI {
         let endpoint = TopPostsEndpoint(path: Constants.URLs.topPostsURL(for: category))
         guard let urlRequest = endpoint.urlRequest() else { throw URLError(.badURL) }
         guard let posts: Posts = try await apiClient.get(request: urlRequest) else { throw APIError.noData }
-        return posts.data.children.compactMap(\.data)
+        
+        let postItems = posts.data.children.compactMap(\.data)
+        /// ensure that the received category is a valid
+        assert(Categories(rawValue: self.category) != nil)
+        
+        /// 3. dump to db
+        let categoryModel = CategoriesModel(
+            category: self.category,
+            postItems: postItems
+        )
+        
+        try await MainActor.run {
+            modelContext.insert(categoryModel)
+            try modelContext.save()
+        }
+        
+        return postItems
     }
     
     @MainActor

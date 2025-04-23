@@ -34,13 +34,6 @@ import SwiftData
             do {
                 let posts = try await postItemsRepo.getPosts()
                 self.postItems = .loaded(items: posts)
-                
-                /// ensure that the received category is a valid
-                assert(Categories(rawValue: self.category) != nil)
-                
-                let categoryModel = CategoriesModel(category: self.category, postItems: posts)
-                modelContext.insert(categoryModel)
-                try modelContext.save()
             } catch {
                 print(error.localizedDescription)
                 self.postItems = .failed(error: error)
