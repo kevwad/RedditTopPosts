@@ -7,20 +7,18 @@
 
 
 class CategoryViewModel {
-    var postVMs: [String: PostsViewModel] = [:]
-    
+    var postVMs: [String: PostsViewModel] = [:]    
+    let diContainer: DIContainer
     let categories: [(String, String)] = Categories.allCases
         .map(\.rawValue)
         .map { category in
             (String(localized: "\(category)"), category)
         }
-    let diContainer: DIContainer
     
     init(diContainer: DIContainer) {
         self.diContainer = diContainer
     }
     
-    @MainActor
     func viewModelForCategory(_ category: String) -> PostsViewModel {
         if let existingVM = postVMs[category] {
             return existingVM
